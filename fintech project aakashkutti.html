@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>KUTTI's Fintech</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:#0f172a;color:#111827}
+    .login-screen{min-height:100vh;display:flex;justify-content:center;align-items:center;background:linear-gradient(135deg,#020617,#1e3a8a,#0891b2);padding:20px}
+    .login-box{width:410px;background:white;padding:35px;border-radius:24px;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+    input,select,textarea{width:100%;padding:13px;margin:8px 0;border:1px solid #ddd;border-radius:12px}
+    button{padding:12px 16px;border:0;border-radius:12px;background:#2563eb;color:white;cursor:pointer;font-weight:bold}
+    button:hover{opacity:.85}
+    .auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}
+    .auth-tabs button{background:#e5e7eb;color:#111827}
+    .auth-tabs .active-auth{background:#2563eb;color:white}
+    .dashboard{display:none;min-height:100vh}
+    .sidebar{width:250px;background:#020617;color:white;padding:25px}
+    .sidebar h2{color:#38bdf8}
+    .sidebar button{width:100%;margin:7px 0;background:#1e293b;text-align:left}
+    .sidebar button.active{background:#38bdf8;color:#020617}
+    .main{flex:1;padding:30px;background:#f8fafc}
+    .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;gap:20px}
+    .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:20px}
+    .card,.panel{background:white;padding:22px;border-radius:20px;box-shadow:0 8px 20px rgba(0,0,0,.08)}
+    .card h3{color:#64748b;font-size:14px}.card h1{font-size:23px}
+    .green{color:#16a34a}.red{color:#dc2626}.blue{color:#2563eb}.purple{color:#7c3aed}.orange{color:#ea580c}
+    .section{display:none;margin-top:25px}.section.active{display:block}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .mini-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:20px}
+    .mini-box{background:#f8fafc;padding:15px;border-radius:14px;border:1px solid #e5e7eb}
+    table{width:100%;border-collapse:collapse;margin-top:15px}
+    th,td{padding:12px;border-bottom:1px solid #e5e7eb;text-align:left}
+    .progress{height:14px;background:#e5e7eb;border-radius:20px;overflow:hidden;margin-top:8px}
+    .progress span{display:block;height:100%;background:linear-gradient(90deg,#38bdf8,#2563eb)}
+    .empty{color:#64748b;background:#f1f5f9;padding:15px;border-radius:14px}
+    .danger-btn,.small-btn{background:#dc2626}
+    .small-btn{padding:8px 10px;border-radius:8px;font-size:12px}
+    .success-msg{color:#16a34a}
+    .error-msg{color:#dc2626}
+    .chart-row{display:flex;align-items:center;gap:12px;margin:12px 0}
+    .chart-label{width:90px;font-size:13px;color:#475569}
+    .chart-track{flex:1;background:#e5e7eb;border-radius:20px;height:18px;overflow:hidden}
+    .chart-fill{height:100%;background:linear-gradient(90deg,#38bdf8,#2563eb);border-radius:20px}
+    .chart-value{width:100px;text-align:right;font-size:13px}
+    .filter-row{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px}
+    @media(max-width:1100px){.cards{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:900px){
+      .dashboard{flex-direction:column}
+      .sidebar{width:100%}
+      .cards,.grid,.mini-summary,.filter-row{grid-template-columns:1fr}
+      .topbar{flex-direction:column;align-items:flex-start}
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h1>KUTTI's Fintech</h1>
+    <p>Create your finance account or sign in with your saved Gmail.</p>
+    <p><b>Demo:</b> kutti1@gmail.com / 1234</p>
+
+    <div class="auth-tabs">
+      <button id="signInTab" class="active-auth" onclick="switchAuth('signin')">Sign In</button>
+      <button id="signUpTab" onclick="switchAuth('signup')">Sign Up</button>
+    </div>
+
+    <input type="email" id="authEmail" placeholder="Enter Gmail ID">
+    <input type="password" id="authPassword" placeholder="Enter Password">
+    <input type="password" id="confirmPassword" placeholder="Confirm Password" style="display:none">
+
+    <button id="authButton" onclick="handleAuth()">Sign In</button>
+    <p id="authMessage"></p>
+  </div>
+</div>
+
+<div class="dashboard" id="dashboard">
+  <div class="sidebar">
+    <h2>KUTTI's Fintech</h2>
+    <button class="active" onclick="showSection('overview',this)">Dashboard</button>
+    <button onclick="showSection('income',this)">Incomes</button>
+    <button onclick="showSection('expenses',this)">Expenses</button>
+    <button onclick="showSection('investments',this)">Investments</button>
+    <button onclick="showSection('savings',this)">Monthly Savings</button>
+    <button onclick="showSection('monthlyGoals',this)">Monthly Goals</button>
+    <button onclick="showSection('yearlyInsights',this)">Yearly Insights</button>
+    <button onclick="showSection('insights',this)">Smart Insights</button>
+    <button onclick="showSection('settings',this)">Settings</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div class="main" id="mainArea">
+    <div class="topbar">
+      <h1>KUTTI's Fintech Management</h1>
+      <p id="userEmail"></p>
+    </div>
+
+    <div class="cards">
+      <div class="card"><h3>Total Balance</h3><h1 id="balance">₹0</h1><p class="green">Live updated</p></div>
+      <div class="card"><h3>Total Income</h3><h1 id="totalIncome">₹0</h1><p class="green">Money received</p></div>
+      <div class="card"><h3>Total Expenses</h3><h1 id="totalExpense">₹0</h1><p class="red">Money spent</p></div>
+      <div class="card"><h3>Investments</h3><h1 id="totalInvestment">₹0</h1><p class="blue">Portfolio value</p></div>
+      <div class="card"><h3>Future Savings</h3><h1 id="futureSavings">₹0</h1><p class="purple">Investments + savings</p></div>
+    </div>
+
+    <div id="overview" class="section active">
+      <div class="panel">
+        <h2>Welcome to your monthly finance dashboard</h2>
+        <p id="welcomeText">Track monthly income, expenses, investments, savings, and goals in one connected app.</p>
+
+        <div class="mini-summary">
+          <div class="mini-box"><h3>Savings Rate</h3><p id="savingsRate">0%</p></div>
+          <div class="mini-box"><h3>Monthly Goals</h3><p id="goalCount">0 goals added</p></div>
+          <div class="mini-box"><h3>Best Tip</h3><p id="moneyTip">Add your first income to start insights.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="income" class="section">
+      <div class="grid">
+        <div class="panel">
+          <h2>Incomes</h2>
+          <select id="incomeNameSelect" onchange="toggleCustomIncomeName()">
+            <option value="">Select income name</option>
+            <option>Salary</option>
+            <option>Freelance Payment</option>
+            <option>Business Income</option>
+            <option>Bonus</option>
+            <option>Rental Income</option>
+            <option>Cashback</option>
+            <option>Gift Money</option>
+            <option>Part-time Work</option>
+            <option>Interest Income</option>
+            <option>Dividend Income</option>
+            <option>Other</option>
+          </select>
+          <input id="incomeNameCustom" placeholder="Enter custom income name" style="display:none">
+          <input id="incomeAmount" type="number" placeholder="Amount">
+          <input id="incomeDate" type="date">
+          <select id="incomeType">
+            <option>Monthly Salary</option><option>Freelance</option><option>Business</option><option>Bonus</option><option>Passive Income</option><option>Other</option>
+          </select>
+          <textarea id="incomeNote" placeholder="Notes"></textarea>
+          <button onclick="addIncome()">Add Income</button>
+        </div>
+        <div class="panel">
+          <h2>Income Records</h2>
+          <table>
+            <thead><tr><th>Name</th><th>Type</th><th>Date</th><th>Amount</th><th>Action</th></tr></thead>
+            <tbody id="incomeTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="expenses" class="section">
+      <div class="grid">
+        <div class="panel">
+          <h2>Expenses</h2>
+          <select id="expenseNameSelect" onchange="toggleCustomExpenseName()">
+            <option value="">Select expense name</option>
+            <option>House Rent</option>
+            <option>Groceries</option>
+            <option>Swiggy/Zomato</option>
+            <option>Electricity Bill</option>
+            <option>Internet Bill</option>
+            <option>Mobile Recharge</option>
+            <option>Fuel</option>
+            <option>Shopping</option>
+            <option>Gym</option>
+            <option>Medical</option>
+            <option>EMI</option>
+            <option>Movie/Entertainment</option>
+            <option>Travel</option>
+            <option>Other</option>
+          </select>
+          <input id="expenseNameCustom" placeholder="Enter custom expense name" style="display:none">
+          <input id="expenseAmount" type="number" placeholder="Amount">
+          <input id="expenseDate" type="date">
+          <select id="expenseCategory">
+            <option>Food</option><option>Rent</option><option>Travel</option><option>Shopping</option><option>Bills</option><option>EMI</option><option>Health</option><option>Education</option><option>Entertainment</option><option>Other</option>
+          </select>
+          <select id="paymentMode">
+            <option>UPI</option><option>Credit Card</option><option>Debit Card</option><option>Cash</option><option>Net Banking</option>
+          </select>
+          <textarea id="expenseNote" placeholder="Notes"></textarea>
+          <button onclick="addExpense()">Add Expense</button>
+        </div>
+        <div class="panel">
+          <h2>Expense Records</h2>
+          <table>
+            <thead><tr><th>Name</th><th>Category</th><th>Mode</th><th>Amount</th><th>Action</th></tr></thead>
+            <tbody id="expenseTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="investments" class="section">
+      <div class="grid">
+        <div class="panel">
+          <h2>Investments</h2>
+          <select id="investmentNameSelect" onchange="toggleCustomInvestmentName()">
+            <option value="">Select investment name</option>
+            <option>SIP</option><option>Mutual Fund</option><option>Stocks</option><option>Gold</option><option>Fixed Deposit</option><option>Recurring Deposit</option><option>PPF</option><option>NPS</option><option>Crypto</option><option>Real Estate</option><option>Emergency Fund</option><option>Index Fund</option><option>ELSS</option><option>Other</option>
+          </select>
+          <input id="investmentNameCustom" placeholder="Enter custom investment name" style="display:none">
+          <input id="investmentAmount" type="number" placeholder="Amount">
+          <input id="investmentDate" type="date">
+          <select id="investmentType">
+            <option>Mutual Fund</option><option>Stocks</option><option>Gold</option><option>FD</option><option>RD</option><option>PPF</option><option>NPS</option><option>Crypto</option><option>Real Estate</option><option>Other</option>
+          </select>
+          <input id="expectedReturn" type="number" placeholder="Expected return %">
+          <textarea id="investmentNote" placeholder="Notes"></textarea>
+          <button onclick="addInvestment()">Add Investment</button>
+        </div>
+        <div class="panel">
+          <h2>Investment Records</h2>
+          <table>
+            <thead><tr><th>Name</th><th>Type</th><th>Return</th><th>Amount</th><th>Action</th></tr></thead>
+            <tbody id="investmentTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="savings" class="section">
+      <div class="grid">
+        <div class="panel">
+          <h2>Monthly Savings</h2>
+          <select id="savingNameSelect" onchange="toggleCustomSavingName()">
+            <option value="">Select saving name</option>
+            <option>Emergency Savings</option>
+            <option>Travel Savings</option>
+            <option>House Savings</option>
+            <option>Bike/Car Savings</option>
+            <option>Education Savings</option>
+            <option>Marriage Savings</option>
+            <option>Gadget Savings</option>
+            <option>Medical Savings</option>
+            <option>Family Savings</option>
+            <option>Other</option>
+          </select>
+          <input id="savingNameCustom" placeholder="Enter custom saving name" style="display:none">
+          <input id="savingAmount" type="number" placeholder="Monthly saving amount">
+          <input id="savingMonth" type="month">
+          <textarea id="savingNote" placeholder="Notes"></textarea>
+          <button onclick="addSaving()">Add Monthly Saving</button>
+        </div>
+        <div class="panel">
+          <h2>Savings Records</h2>
+          <table>
+            <thead><tr><th>Name</th><th>Month</th><th>Amount</th><th>Action</th></tr></thead>
+            <tbody id="savingTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="monthlyGoals" class="section">
+      <div class="grid">
+        <div class="panel">
+          <h2>Monthly Goals</h2>
+          <select id="goalNameSelect" onchange="toggleCustomGoalName()">
+            <option value="">Select monthly goal</option>
+            <option>Save ₹10,000 this month</option>
+            <option>Reduce food spending</option>
+            <option>Reduce shopping expense</option>
+            <option>Invest fixed amount</option>
+            <option>Build emergency fund</option>
+            <option>Clear credit card bill</option>
+            <option>Pay EMI on time</option>
+            <option>Increase monthly savings</option>
+            <option>Other</option>
+          </select>
+          <input id="goalNameCustom" placeholder="Enter custom goal name" style="display:none">
+          <input id="goalTarget" type="number" placeholder="Monthly target amount">
+          <input id="goalSaved" type="number" placeholder="Amount completed/saved">
+          <input id="goalMonth" type="month">
+          <select id="goalPriority">
+            <option>High Priority</option><option>Medium Priority</option><option>Low Priority</option>
+          </select>
+          <button onclick="addGoal()">Add Monthly Goal</button>
+        </div>
+        <div class="panel">
+          <h2>Monthly Goal Progress</h2>
+          <div id="goalList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="yearlyInsights" class="section">
+      <div class="panel">
+        <h2>Yearly Insights with Charts</h2>
+        <div class="filter-row">
+          <select id="yearFilter" onchange="renderYearlyInsights()"></select>
+          <select id="chartType" onchange="renderYearlyInsights()">
+            <option value="category">Category Split</option>
+            <option value="monthly">Monthly Trend</option>
+          </select>
+        </div>
+
+        <div class="mini-summary">
+          <div class="mini-box"><h3>Yearly Income</h3><p id="yearIncome">₹0</p></div>
+          <div class="mini-box"><h3>Yearly Expenses</h3><p id="yearExpense">₹0</p></div>
+          <div class="mini-box"><h3>Yearly Future Savings</h3><p id="yearFuture">₹0</p></div>
+        </div>
+
+        <br>
+        <div id="yearChart"></div>
+      </div>
+    </div>
+
+    <div id="insights" class="section">
+      <div class="panel">
+        <h2>Smart Insights</h2>
+        <div id="insightList"></div>
+      </div>
+    </div>
+
+    <div id="settings" class="section">
+      <div class="panel">
+        <h2>Background Colors</h2>
+        <button onclick="changeTheme('#f8fafc')">Light</button>
+        <button onclick="changeTheme('#e0f2fe')">Sky Blue</button>
+        <button onclick="changeTheme('#fef3c7')">Warm Yellow</button>
+        <button onclick="changeTheme('#ecfdf5')">Mint Green</button>
+        <button onclick="changeTheme('#fce7f3')">Pink</button>
+        <button onclick="changeTheme('#ede9fe')">Purple</button>
+        <button onclick="changeTheme('#ffedd5')">Orange</button>
+        <button onclick="changeTheme('#ccfbf1')">Teal</button>
+        <button onclick="changeTheme('#e2e8f0')">Grey</button>
+        <button onclick="changeTheme('#dcfce7')">Soft Green</button>
+      </div>
+
+      <div class="panel">
+        <h2>Account Actions</h2>
+        <p>This clears only the currently logged-in Gmail data from this browser.</p>
+        <button class="danger-btn" onclick="resetCurrentUserData()">Reset My Data</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let authMode="signin";
+let currentUser="";
+let userData;
+
+function switchAuth(mode){
+  authMode=mode;
+  signInTab.classList.remove("active-auth");
+  signUpTab.classList.remove("active-auth");
+  authMessage.innerText="";
+
+  if(mode==="signin"){
+    signInTab.classList.add("active-auth");
+    confirmPassword.style.display="none";
+    authButton.innerText="Sign In";
+  }else{
+    signUpTab.classList.add("active-auth");
+    confirmPassword.style.display="block";
+    authButton.innerText="Create Account";
+  }
+}
+
+function defaultData(){
+  return {
+    password:"",
+    income:[],
+    expenses:[],
+    investments:[],
+    savings:[],
+    goals:[],
+    theme:"#f8fafc"
+  };
+}
+
+function demoKuttiData(){
+  return {
+    password:"1234",
+    income:[
+      {name:"Salary",amount:55000,date:"2026-01-05",type:"Monthly Salary",note:"January salary"},
+      {name:"Freelance Payment",amount:12000,date:"2026-02-14",type:"Freelance",note:"Logo project"},
+      {name:"Business Income",amount:18000,date:"2026-03-10",type:"Business",note:"Small client work"},
+      {name:"Bonus",amount:10000,date:"2026-04-20",type:"Bonus",note:"Performance bonus"}
+    ],
+    expenses:[
+      {name:"House Rent",amount:15000,date:"2026-01-06",category:"Rent",mode:"UPI",note:"Monthly rent"},
+      {name:"Groceries",amount:6200,date:"2026-01-11",category:"Food",mode:"Debit Card",note:"Monthly groceries"},
+      {name:"Swiggy/Zomato",amount:2800,date:"2026-02-08",category:"Food",mode:"UPI",note:"Food orders"},
+      {name:"Electricity Bill",amount:1800,date:"2026-03-12",category:"Bills",mode:"UPI",note:"Power bill"},
+      {name:"Shopping",amount:4500,date:"2026-04-18",category:"Shopping",mode:"Credit Card",note:"Clothes"}
+    ],
+    investments:[
+      {name:"SIP",amount:8000,date:"2026-01-15",type:"Mutual Fund",return:"12",note:"Monthly SIP"},
+      {name:"Gold",amount:5000,date:"2026-02-20",type:"Gold",return:"8",note:"Digital gold"},
+      {name:"Stocks",amount:10000,date:"2026-03-25",type:"Stocks",return:"15",note:"Large cap stocks"}
+    ],
+    savings:[
+      {name:"Emergency Savings",amount:7000,month:"2026-01",note:"Emergency fund"},
+      {name:"Travel Savings",amount:4000,month:"2026-02",note:"Trip fund"},
+      {name:"Gadget Savings",amount:3000,month:"2026-03",note:"Laptop/phone fund"}
+    ],
+    goals:[
+      {name:"Save ₹20,000 this month",target:20000,saved:15000,month:"2026-01",priority:"High Priority"},
+      {name:"Reduce food spending",target:5000,saved:2800,month:"2026-02",priority:"Medium Priority"},
+      {name:"Invest ₹15,000 monthly",target:15000,saved:10000,month:"2026-03",priority:"High Priority"}
+    ],
+    theme:"#e0f2fe"
+  };
+}
+
+function seedDemoAccount(){
+  let demoEmail="kutti1@gmail.com";
+  let key=getUserKey(demoEmail);
+  if(!localStorage.getItem(key)){
+    localStorage.setItem(key, JSON.stringify(demoKuttiData()));
+  }
+}
+
+function normalizeData(){
+  if(!userData.income) userData.income=[];
+  if(!userData.expenses) userData.expenses=[];
+  if(!userData.investments) userData.investments=[];
+  if(!userData.savings) userData.savings=[];
+  if(!userData.goals) userData.goals=[];
+  if(!userData.theme) userData.theme="#f8fafc";
+}
+
+function getUserKey(email){return "kuttiFintech_" + email;}
+
+seedDemoAccount();
+
+function handleAuth(){
+  seedDemoAccount();
+  let email=authEmail.value.trim().toLowerCase();
+  let pass=authPassword.value;
+  let confirmPass=confirmPassword.value;
+
+  if(!email.includes("@gmail.com")){
+    showAuthMessage("Please enter a valid Gmail ID.", "error");
+    return;
+  }
+
+  if(pass.length<4){
+    showAuthMessage("Password must be at least 4 characters.", "error");
+    return;
+  }
+
+  let saved=localStorage.getItem(getUserKey(email));
+
+  if(authMode==="signup"){
+    if(saved){
+      showAuthMessage("Account already exists. Please Sign In.", "error");
+      return;
+    }
+
+    if(pass!==confirmPass){
+      showAuthMessage("Passwords do not match.", "error");
+      return;
+    }
+
+    currentUser=email;
+    userData=defaultData();
+    userData.password=pass;
+    saveData();
+    openDashboard("New account created successfully.");
+  }else{
+    if(!saved){
+      showAuthMessage("No account found. Please Sign Up first.", "error");
+      return;
+    }
+
+    userData=JSON.parse(saved);
+    normalizeData();
+
+    if(userData.password!==pass){
+      showAuthMessage("Wrong password. Try again.", "error");
+      return;
+    }
+
+    currentUser=email;
+    openDashboard("Welcome back! Your saved finance data has been loaded.");
+  }
+}
+
+function showAuthMessage(msg,type){
+  authMessage.innerText=msg;
+  authMessage.className=type==="error" ? "error-msg" : "success-msg";
+}
+
+function openDashboard(message){
+  loginScreen.style.display="none";
+  dashboard.style.display="flex";
+  userEmail.innerText=currentUser;
+  welcomeText.innerText=message;
+  authEmail.value="";
+  authPassword.value="";
+  confirmPassword.value="";
+  renderAll();
+}
+
+function saveData(){
+  localStorage.setItem(getUserKey(currentUser), JSON.stringify(userData));
+}
+
+function logout(){
+  dashboard.style.display="none";
+  loginScreen.style.display="flex";
+}
+
+function showSection(id,btn){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  if(id==="yearlyInsights") renderYearlyInsights();
+}
+
+function money(n){return "₹" + Number(n).toLocaleString("en-IN");}
+
+function getYearFromDate(dateValue){
+  if(!dateValue) return new Date().getFullYear().toString();
+  return dateValue.slice(0,4);
+}
+
+function getMonthFromDate(dateValue){
+  if(!dateValue) return "No Month";
+  return dateValue.slice(0,7);
+}
+
+function totals(){
+  normalizeData();
+  let incomeTotal=userData.income.reduce((sum,item)=>sum+Number(item.amount),0);
+  let expenseTotal=userData.expenses.reduce((sum,item)=>sum+Number(item.amount),0);
+  let investmentTotal=userData.investments.reduce((sum,item)=>sum+Number(item.amount),0);
+  let savingTotal=userData.savings.reduce((sum,item)=>sum+Number(item.amount),0);
+  let futureTotal=investmentTotal+savingTotal;
+  let currentBalance=incomeTotal-expenseTotal-investmentTotal-savingTotal;
+  let savingsPercent=incomeTotal>0 ? ((futureTotal/incomeTotal)*100).toFixed(1) : 0;
+  return {incomeTotal,expenseTotal,investmentTotal,savingTotal,futureTotal,currentBalance,savingsPercent};
+}
+
+function renderAll(){
+  normalizeData();
+  let t=totals();
+
+  totalIncome.innerText=money(t.incomeTotal);
+  totalExpense.innerText=money(t.expenseTotal);
+  totalInvestment.innerText=money(t.investmentTotal);
+  futureSavings.innerText=money(t.futureTotal);
+  balance.innerText=money(t.currentBalance);
+
+  mainArea.style.background=userData.theme;
+  goalCount.innerText=userData.goals.length + " monthly goals added";
+  savingsRate.innerText=t.savingsPercent + "%";
+
+  if(t.incomeTotal===0) moneyTip.innerText="Add your monthly income first to unlock better insights.";
+  else if(t.expenseTotal>t.incomeTotal*0.7) moneyTip.innerText="Your expenses are high. Try reducing non-essential spending.";
+  else if(t.futureTotal<t.incomeTotal*0.2) moneyTip.innerText="Try saving or investing at least 20% of income.";
+  else moneyTip.innerText="Good progress. Your savings discipline looks strong.";
+
+  renderIncome();
+  renderExpenses();
+  renderInvestments();
+  renderSavings();
+  renderGoals();
+  renderInsights();
+  populateYearFilter();
+}
+
+function renderIncome(){
+  incomeTable.innerHTML="";
+  if(userData.income.length===0){
+    incomeTable.innerHTML=`<tr><td colspan="5" class="empty">No income added yet</td></tr>`;
+    return;
+  }
+  userData.income.forEach((i,index)=>{
+    incomeTable.innerHTML+=`<tr><td>${i.name}</td><td>${i.type}</td><td>${i.date || "-"}</td><td class="green">+${money(i.amount)}</td><td><button class="small-btn" onclick="deleteIncome(${index})">Delete</button></td></tr>`;
+  });
+}
+
+function renderExpenses(){
+  expenseTable.innerHTML="";
+  if(userData.expenses.length===0){
+    expenseTable.innerHTML=`<tr><td colspan="5" class="empty">No expenses added yet</td></tr>`;
+    return;
+  }
+  userData.expenses.forEach((e,index)=>{
+    expenseTable.innerHTML+=`<tr><td>${e.name}</td><td>${e.category}</td><td>${e.mode}</td><td class="red">-${money(e.amount)}</td><td><button class="small-btn" onclick="deleteExpense(${index})">Delete</button></td></tr>`;
+  });
+}
+
+function renderInvestments(){
+  investmentTable.innerHTML="";
+  if(userData.investments.length===0){
+    investmentTable.innerHTML=`<tr><td colspan="5" class="empty">No investments added yet</td></tr>`;
+    return;
+  }
+  userData.investments.forEach((i,index)=>{
+    investmentTable.innerHTML+=`<tr><td>${i.name}</td><td>${i.type}</td><td>${i.return || 0}%</td><td class="blue">${money(i.amount)}</td><td><button class="small-btn" onclick="deleteInvestment(${index})">Delete</button></td></tr>`;
+  });
+}
+
+function renderSavings(){
+  savingTable.innerHTML="";
+  if(userData.savings.length===0){
+    savingTable.innerHTML=`<tr><td colspan="4" class="empty">No monthly savings added yet</td></tr>`;
+    return;
+  }
+  userData.savings.forEach((s,index)=>{
+    savingTable.innerHTML+=`<tr><td>${s.name}</td><td>${s.month || "-"}</td><td class="purple">${money(s.amount)}</td><td><button class="small-btn" onclick="deleteSaving(${index})">Delete</button></td></tr>`;
+  });
+}
+
+function renderGoals(){
+  goalList.innerHTML="";
+  if(userData.goals.length===0){
+    goalList.innerHTML=`<p class="empty">No monthly goals added yet</p>`;
+    return;
+  }
+  userData.goals.forEach((g,index)=>{
+    let percent=Math.min((g.saved/g.target)*100,100).toFixed(0);
+    goalList.innerHTML+=`
+      <div style="margin-bottom:20px">
+        <b>${g.name}</b>
+        <p>${money(g.saved)} completed of ${money(g.target)} - ${percent}%</p>
+        <div class="progress"><span style="width:${percent}%"></span></div>
+        <small>${g.priority} | Month: ${g.month || "-"}</small><br><br>
+        <button class="small-btn" onclick="deleteGoal(${index})">Delete Goal</button>
+      </div>`;
+  });
+}
+
+function renderInsights(){
+  let t=totals();
+  let emergencySuggestion=Math.round(t.expenseTotal*6);
+  insightList.innerHTML=`
+    <div class="mini-summary">
+      <div class="mini-box"><h3>Available Balance</h3><p>${money(t.currentBalance)}</p></div>
+      <div class="mini-box"><h3>Future Savings</h3><p>${money(t.futureTotal)}</p></div>
+      <div class="mini-box"><h3>Emergency Fund Target</h3><p>${money(emergencySuggestion)}</p></div>
+    </div>
+    <br>
+    <p><b>Expense warning:</b> ${t.expenseTotal>t.incomeTotal*0.7 && t.incomeTotal>0 ? "Expenses are above 70% of income." : "Expenses are currently under control."}</p>
+    <p><b>Savings habit:</b> ${t.futureTotal>0 ? "You have started building future savings." : "No future savings added yet."}</p>
+  `;
+}
+
+function populateYearFilter(){
+  let years=new Set();
+  [...userData.income,...userData.expenses,...userData.investments].forEach(x=>years.add(getYearFromDate(x.date)));
+  userData.savings.forEach(x=>years.add(getYearFromDate(x.month)));
+  userData.goals.forEach(x=>years.add(getYearFromDate(x.month)));
+
+  if(years.size===0) years.add(new Date().getFullYear().toString());
+
+  let current=yearFilter.value;
+  yearFilter.innerHTML="";
+  Array.from(years).sort().reverse().forEach(y=>{
+    yearFilter.innerHTML+=`<option value="${y}">${y}</option>`;
+  });
+
+  if(current) yearFilter.value=current;
+}
+
+function renderYearlyInsights(){
+  populateYearFilter();
+  let y=yearFilter.value || new Date().getFullYear().toString();
+
+  let income=userData.income.filter(x=>getYearFromDate(x.date)===y).reduce((s,x)=>s+Number(x.amount),0);
+  let expenses=userData.expenses.filter(x=>getYearFromDate(x.date)===y).reduce((s,x)=>s+Number(x.amount),0);
+  let investments=userData.investments.filter(x=>getYearFromDate(x.date)===y).reduce((s,x)=>s+Number(x.amount),0);
+  let savings=userData.savings.filter(x=>getYearFromDate(x.month)===y).reduce((s,x)=>s+Number(x.amount),0);
+  let future=investments+savings;
+
+  yearIncome.innerText=money(income);
+  yearExpense.innerText=money(expenses);
+  yearFuture.innerText=money(future);
+
+  if(chartType.value==="monthly"){
+    renderMonthlyTrendChart(y);
+  }else{
+    renderCategoryChart(income,expenses,investments,savings);
+  }
+}
+
+function chartRow(label,value,total,colorClass){
+  let percent=total>0 ? ((value/total)*100).toFixed(1) : 0;
+  return `
+    <div class="chart-row">
+      <div class="chart-label">${label}</div>
+      <div class="chart-track"><div class="chart-fill" style="width:${percent}%"></div></div>
+      <div class="chart-value">${money(value)} (${percent}%)</div>
+    </div>`;
+}
+
+function renderCategoryChart(income,expenses,investments,savings){
+  let total=income+expenses+investments+savings;
+  if(total===0){
+    yearChart.innerHTML=`<p class="empty">No yearly data available yet.</p>`;
+    return;
+  }
+
+  yearChart.innerHTML=`
+    <h3>Yearly Category Percentage Split</h3>
+    ${chartRow("Income",income,total)}
+    ${chartRow("Expenses",expenses,total)}
+    ${chartRow("Investments",investments,total)}
+    ${chartRow("Savings",savings,total)}
+  `;
+}
+
+function renderMonthlyTrendChart(year){
+  let months=["01","02","03","04","05","06","07","08","09","10","11","12"];
+  let names=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  let values=months.map(m=>{
+    let ym=year+"-"+m;
+    let income=userData.income.filter(x=>getMonthFromDate(x.date)===ym).reduce((s,x)=>s+Number(x.amount),0);
+    let expenses=userData.expenses.filter(x=>getMonthFromDate(x.date)===ym).reduce((s,x)=>s+Number(x.amount),0);
+    let investments=userData.investments.filter(x=>getMonthFromDate(x.date)===ym).reduce((s,x)=>s+Number(x.amount),0);
+    let savings=userData.savings.filter(x=>getMonthFromDate(x.month)===ym).reduce((s,x)=>s+Number(x.amount),0);
+    return {month:ym,total:income+expenses+investments+savings,label:names[Number(m)-1]};
+  });
+
+  let max=Math.max(...values.map(v=>v.total),1);
+  let rows=values.map(v=>chartRow(v.label,v.total,max)).join("");
+
+  yearChart.innerHTML=`
+    <h3>Monthly Activity Trend</h3>
+    ${rows}
+  `;
+}
+
+function toggleCustomIncomeName(){
+  if(incomeNameSelect.value==="Other"){incomeNameCustom.style.display="block";}
+  else{incomeNameCustom.style.display="none";incomeNameCustom.value="";}
+}
+
+function toggleCustomExpenseName(){
+  if(expenseNameSelect.value==="Other"){expenseNameCustom.style.display="block";}
+  else{expenseNameCustom.style.display="none";expenseNameCustom.value="";}
+}
+
+function toggleCustomInvestmentName(){
+  if(investmentNameSelect.value==="Other"){investmentNameCustom.style.display="block";}
+  else{investmentNameCustom.style.display="none";investmentNameCustom.value="";}
+}
+
+function toggleCustomSavingName(){
+  if(savingNameSelect.value==="Other"){savingNameCustom.style.display="block";}
+  else{savingNameCustom.style.display="none";savingNameCustom.value="";}
+}
+
+function toggleCustomGoalName(){
+  if(goalNameSelect.value==="Other"){goalNameCustom.style.display="block";}
+  else{goalNameCustom.style.display="none";goalNameCustom.value="";}
+}
+
+function addIncome(){
+  let selected=incomeNameSelect.value;
+  let finalName=selected==="Other" ? incomeNameCustom.value : selected;
+  if(!finalName || !incomeAmount.value) return alert("Select income name and amount");
+  userData.income.push({name:finalName,amount:Number(incomeAmount.value),date:incomeDate.value,type:incomeType.value,note:incomeNote.value});
+  saveData(); renderAll();
+  incomeNameSelect.value=""; incomeNameCustom.value=""; incomeNameCustom.style.display="none"; incomeAmount.value=""; incomeDate.value=""; incomeNote.value="";
+}
+
+function addExpense(){
+  let selected=expenseNameSelect.value;
+  let finalName=selected==="Other" ? expenseNameCustom.value : selected;
+  if(!finalName || !expenseAmount.value) return alert("Select expense name and amount");
+  userData.expenses.push({name:finalName,amount:Number(expenseAmount.value),date:expenseDate.value,category:expenseCategory.value,mode:paymentMode.value,note:expenseNote.value});
+  saveData(); renderAll();
+  expenseNameSelect.value=""; expenseNameCustom.value=""; expenseNameCustom.style.display="none"; expenseAmount.value=""; expenseDate.value=""; expenseNote.value="";
+}
+
+function addInvestment(){
+  let selected=investmentNameSelect.value;
+  let finalName=selected==="Other" ? investmentNameCustom.value : selected;
+  if(!finalName || !investmentAmount.value) return alert("Select investment name and amount");
+  userData.investments.push({name:finalName,amount:Number(investmentAmount.value),date:investmentDate.value,type:investmentType.value,return:expectedReturn.value,note:investmentNote.value});
+  saveData(); renderAll();
+  investmentNameSelect.value=""; investmentNameCustom.value=""; investmentNameCustom.style.display="none"; investmentAmount.value=""; investmentDate.value=""; investmentNote.value=""; expectedReturn.value="";
+}
+
+function addSaving(){
+  let selected=savingNameSelect.value;
+  let finalName=selected==="Other" ? savingNameCustom.value : selected;
+  if(!finalName || !savingAmount.value) return alert("Select saving name and amount");
+  userData.savings.push({name:finalName,amount:Number(savingAmount.value),month:savingMonth.value,note:savingNote.value});
+  saveData(); renderAll();
+  savingNameSelect.value=""; savingNameCustom.value=""; savingNameCustom.style.display="none"; savingAmount.value=""; savingMonth.value=""; savingNote.value="";
+}
+
+function addGoal(){
+  let selected=goalNameSelect.value;
+  let finalName=selected==="Other" ? goalNameCustom.value : selected;
+  if(!finalName || !goalTarget.value) return alert("Select monthly goal and target");
+  userData.goals.push({name:finalName,target:Number(goalTarget.value),saved:Number(goalSaved.value || 0),month:goalMonth.value,priority:goalPriority.value});
+  saveData(); renderAll();
+  goalNameSelect.value=""; goalNameCustom.value=""; goalNameCustom.style.display="none"; goalTarget.value=""; goalSaved.value=""; goalMonth.value="";
+}
+
+function deleteIncome(index){ if(confirm("Delete this income?")){userData.income.splice(index,1);saveData();renderAll();} }
+function deleteExpense(index){ if(confirm("Delete this expense?")){userData.expenses.splice(index,1);saveData();renderAll();} }
+function deleteInvestment(index){ if(confirm("Delete this investment?")){userData.investments.splice(index,1);saveData();renderAll();} }
+function deleteSaving(index){ if(confirm("Delete this monthly saving?")){userData.savings.splice(index,1);saveData();renderAll();} }
+function deleteGoal(index){ if(confirm("Delete this monthly goal?")){userData.goals.splice(index,1);saveData();renderAll();} }
+
+function changeTheme(color){
+  userData.theme=color;
+  saveData();
+  renderAll();
+}
+
+function resetCurrentUserData(){
+  if(confirm("Are you sure you want to reset this Gmail data?")){
+    let oldPassword=userData.password;
+    userData=defaultData();
+    userData.password=oldPassword;
+    saveData();
+    renderAll();
+    welcomeText.innerText="Your dashboard has been reset. Start adding new data.";
+  }
+}
+</script>
+
+</body>
+</html>
